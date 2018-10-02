@@ -5,12 +5,17 @@ const
   Stage = require('node-vk-bot-api/lib/stage'),
   Scene = require('node-vk-bot-api/lib/scene');
 
+const Koa = require('koa');
+
 const
   helper = require('./functions'),
   processENV = require('./storage/keys.json'),
   botPhrases = require('./storage/phrases');
 
 // ************************************************************
+
+// CREATE NEW SERVER
+const koaServer = new Koa();
 
 // CREATE NEW BOT
 const examTutor = new VkBot({
@@ -230,6 +235,13 @@ examTutor.on((ctx) => {
 
 // ************************************************************
 
-examTutor.startPolling();
 
+// SERVER -> start
+koaServer.use(async ctx => {
+  ctx.body = 'Server is running...';
+});
+koaServer.listen(3000);
+
+// BOT -> start
+examTutor.startPolling();
 console.log('examTutor is running ...');

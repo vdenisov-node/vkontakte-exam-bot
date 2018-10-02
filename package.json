@@ -2,9 +2,9 @@
   "name": "vk-bot",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
-    "start": "nodemon index.js",
+    "start": "nodemon app.js",
     "botact": "nodemon attempts/bot__botact.js",
     "vk-api": "nodemon attempts/bot__node-vk-bot-api.js",
     "promise": "nodemon attempts/bot__VK-Promise.js"
@@ -16,6 +16,7 @@
     "body-parser": "^1.18.3",
     "botact": "^2.4.2",
     "express": "^4.16.3",
+    "koa": "^2.5.3",
     "node-vk-bot-api": "^2.1.6"
   }
 }
