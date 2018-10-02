@@ -1,0 +1,5 @@
+{
+  "name": "exam-tutor-bot",
+  "description": "bot for prepare to test part of exams",
+  "keywords": ["node", "vk", "vkontakte", "bot", "node-vk-bot-api"]
+}
