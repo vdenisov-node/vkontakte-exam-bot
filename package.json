@@ -4,6 +4,7 @@
   "description": "",
   "main": "app.js",
   "scripts": {
+    "heroku": "node app.js",
     "start": "nodemon app.js",
     "botact": "nodemon attempts/bot__botact.js",
     "vk-api": "nodemon attempts/bot__node-vk-bot-api.js",
