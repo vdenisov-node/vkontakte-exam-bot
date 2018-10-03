@@ -10,7 +10,7 @@ const Koa = require('koa');
 const
   helper = require('./functions'),
   processENV = require('./config/keys.json'),
-  exam = require('./storage/exam.json'),
+  exam = require('./database/exam.json'),
   { botKeyboards, botPhrases } = require('./storage');
 
 // ************************************************************
