@@ -1,3 +1,4 @@
 module.exports = {
-  randomElementFrom: require('./pick').pick
+  randomElementFrom: require('./getRandom'),
+  randomQuestionsFrom: require('./getTest')
 }

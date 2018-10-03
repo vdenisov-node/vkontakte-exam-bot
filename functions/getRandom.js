@@ -15,4 +15,4 @@ if (require.main === module) {
 
 }
 
-module.exports = { pick };
+module.exports = pick;

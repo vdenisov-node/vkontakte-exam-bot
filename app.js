@@ -9,8 +9,9 @@ const Koa = require('koa');
 
 const
   helper = require('./functions'),
-  processENV = require('./storage/keys.json'),
-  botPhrases = require('./storage/phrases');
+  processENV = require('./config/keys.json'),
+  exam = require('./storage/exam.json'),
+  { botKeyboards, botPhrases } = require('./storage');
 
 // ************************************************************
 
@@ -30,69 +31,38 @@ const session = new Session();
 
 // HANDLERS FOR SCENES
 
-const scene = new Scene('meet',
+const scene = new Scene('sceneSetupByUser',
+  // user class ?
   (ctx) => {
     ctx.scene.next();
-    ctx.reply('В каком ты классе ?', null, Markup
-      .keyboard([
-        [
-          Markup.button('8', 'primary'),
-          Markup.button('9', 'primary'),
-          Markup.button('10', 'primary'),
-          Markup.button('11', 'primary')
-        ]
-      ])
-      .oneTime()
-    );
+    ctx.reply('В каком ты классе ?', null,
+      Markup.keyboard(botKeyboards.findUserClass).oneTime());
   },
+  // user scores ?
   (ctx) => {
     ctx.session['class'] = ctx.message.text;
-
     ctx.scene.next();
-    ctx.reply('На сколько баллов хочешь сдать ЕГЭ ?', null, Markup
-      .keyboard([
-        [
-          Markup.button('> 60', 'primary'),
-          Markup.button('> 70', 'primary'),
-          Markup.button('> 80', 'primary'),
-          Markup.button('> 90', 'primary')
-        ]
-      ])
-      .oneTime()
-    );
+    ctx.reply('На сколько баллов хочешь сдать ЕГЭ ?', null,
+      Markup.keyboard(botKeyboards.findUserScores).oneTime());
   },
+  // user intensity ?
   (ctx) => {
     ctx.session['scores'] = ctx.message.text;
-
     ctx.scene.next();
-    ctx.reply('Какая у тебя мотивация ?', null, Markup
-      .keyboard([
-        [ Markup.button('Я отличник', 'primary') ],
-        [ Markup.button('Хочу сдать и забыть', 'primary') ],
-        [ Markup.button('Просто потренироваться', 'primary') ],
-        [ Markup.button('Мамка заставила', 'primary') ]
-      ])
-      .oneTime()
-    );
+    ctx.reply('Как часто ты хочешь заниматься ?', null,
+      Markup.keyboard(botKeyboards.findUserIntensity).oneTime());
   },
+  // validation
   (ctx) => {
-    ctx.session['motivation'] = ctx.message.text;
-
+    ctx.session['intensity'] = ctx.message.text;
     ctx.scene.leave();
     ctx.reply(`
-      Всё правильно ?
-      * учишься в ${ctx.session.class} классе
-      * хочешь по ЕГЭ баллов -> ${ctx.session.scores}
-      * мотивация -> ${ctx.session.motivation}
-      `, null, Markup
-        .keyboard([
-          [
-            Markup.button('ДА', 'positive'),
-            Markup.button('НЕТ', 'negative')
-          ]
-        ])
-        .oneTime()
-    );
+Всё правильно ?
+
+* учишься в ${ctx.session.class} классе
+* хочешь ${ctx.session.scores} баллов по ЕГЭ
+* будешь заниматься ${ctx.session.intensity}
+      `, null, Markup.keyboard(botKeyboards.isThisCorrect).oneTime());
   }
 );
 
@@ -105,73 +75,84 @@ examTutor.use(stage.middleware());
 
 // HANDLERS FOR COMMANDS
 
-examTutor.command('СТАРТ', (ctx) => {
-  ctx.reply(botPhrases.START_TESTING);
+
+// examTutor.command('ХЕР', (ctx) => {
+//   ctx.reply('типо выбери класc', null, botKeyboards.findUserClass)
+// });
+
+
+// USER SAYS => COMMANDS
+examTutor.command('ПОМОЩЬ', (ctx) => {
+  ctx.reply(botPhrases.COMMANDS_LIST, null,
+    Markup.keyboard(botKeyboards.showMainCommands).oneTime());
 });
 
-examTutor.command('КЛАВА', (ctx) => {
-  ctx.reply('Какое у тебя настроение ?', null, Markup
-    .keyboard([
-      [
-        Markup.button('Normally', 'primary')
-      ],
-      [
-        Markup.button('Fine', 'positive'),
-        Markup.button('Bad', 'negative'),
-      ],
-      [
-        Markup.button(
-          { 
-            "action": { 
-              "type": "text", 
-              "payload": "{\"button\": \"qwerty\"}", 
-              "label": "White" 
-            }, 
-            "color": "default" 
-          }
-        )
-      ],
-    ])
-    .oneTime()
-  );
-});
+//                    ###############
 
-examTutor.command('ПРИВЕТ', (ctx) => {
-  ctx.reply('HELLO !!!');
-});
-
-examTutor.command('КОМАНДЫ', (ctx) => {
-  ctx.reply(botPhrases.COMMANDS_LIST, null, Markup
-    .keyboard([
-      [
-        Markup.button('СТАРТ', 'positive'),
-        Markup.button('ОПРОС', 'primary')
-      ],
-      [
-        Markup.button('КОМАНДЫ', 'default')
-      ],
-      [
-        Markup.button('ОТМЕНА', 'negative')
-      ]
-    ])
-    .oneTime()
-  );
-});
-
+// USER SAYS => START
 examTutor.command('ОПРОС', (ctx) => {
-  ctx.scene.enter('meet');
+  ctx.scene.enter('sceneSetupByUser');
 });
 
+examTutor.command('СТАРТ', (ctx) => {
+  ctx.scene.enter('sceneSetupByUser');
+});
+
+//                    ###############
+
+// USER SAYS => START
+examTutor.command('ТЕСТ', (ctx) => {
+  const result = helper.randomQuestionsFrom(exam);
+  ctx.reply(result.textOfTask, null,
+    Markup.keyboard(botKeyboards.chooseYourAnswer).oneTime());
+});
+
+//                    ###############
+
+// USER SAYS => YES
 examTutor.command('ДА', (ctx) => {
-  ctx.reply("Отлично !!!");
+  ctx.reply("Отлично !!!", null,
+    Markup.keyboard(botKeyboards.showButtonHelp).oneTime());
 });
 
+// USER SAYS => NO
 examTutor.command('НЕТ', (ctx) => {
   ctx.reply("Печально :(");
 });
 
+// USER SAYS => TEST
+examTutor.command('ДАВАЙ', (ctx) => {
+  ctx.reply("Поехали...");
+});
+
+//                    ###############
+
+// USER SAYS => CANCEL
 examTutor.command('ОТМЕНА', (ctx) => {
-  ctx.reply("Действие отменено");
+  ctx.reply("Действие отменено", null,
+    Markup.keyboard(botKeyboards.showButtonHelp).oneTime());
+});
+
+//                    ###############
+
+// USER SAYS => HELLO
+examTutor.command('ПРИВЕТ', (ctx) => {
+  let answer = helper.randomElementFrom(botPhrases.HELLO_LIST);
+  ctx.reply(answer);
+});
+
+// USER SAYS => GOODBYE
+examTutor.command('ПОКА', (ctx) => {
+  let answer = helper.randomElementFrom(botPhrases.GOODBYE_LIST);
+  ctx.reply(answer);
+});
+
+//                    ###############
+
+// TEST FOR EVENT JOIN
+examTutor.command('ИНФА', (ctx) => {
+  ctx.reply(botPhrases.GREETING);
+
 });
 
 // ************************************************************
@@ -183,58 +164,25 @@ examTutor.event('message_edit', (ctx) => {
 });
 
 examTutor.event('group_join', (ctx) => {
-  const btn = [
-    [
-      Markup.button( { 
-        "action": { 
-          "type": "text", 
-          "payload":  "{\"button\": \"qwerty\"}", 
-          "label": "СТАРТ" 
-        }, 
-        "color": "positive" 
-      })
-    ]
-  ]
-  ctx.reply(botPhrases.GREETING, null, Markup
-    // .keyboard([
-    //   [
-    //     Markup.button('/старт', 'primary')
-    //   ]
-    // ])
-    .keyboard(btn)
-    .oneTime()
-  );
+  ctx.reply(botPhrases.GREETING, null,
+    Markup.keyboard(botKeyboards.showButtonStart).oneTime());
 });
 
 examTutor.event('group_leave', (ctx) => {
-  ctx.reply(botPhrases.GOODBYE);
+  ctx.reply(botPhrases.FAREWELL);
 });
-
-// ************************************************************
-
-
 
 // ************************************************************
 
 // HANDLER FOR UNKNOWN COMMANDS
 
 examTutor.on((ctx) => {
-  let answer = helper.randomElementFrom(
-    botPhrases.ANSWERS_FOR_WRONG_COMMAND
-  );
-  console.log('=> extreme answer <=\n', answer);
-  ctx.reply(`${answer}\n${botPhrases.ADVICE}`, null, Markup
-    .keyboard([
-      [
-        Markup.button('КОМАНДЫ', 'default')
-      ]
-    ])
-    .oneTime()
-  );
+  let answer = helper.randomElementFrom(botPhrases.ANSWERS_FOR_WRONG_COMMAND);
+  ctx.reply(`${answer}\n${botPhrases.ADVICE}`, null,
+    Markup.keyboard(botKeyboards.showButtonHelp).oneTime());
 });
 
 // ************************************************************
-
 
 // SERVER -> start
 koaServer.use(async ctx => {
