@@ -75,12 +75,6 @@ examTutor.use(stage.middleware());
 
 // HANDLERS FOR COMMANDS
 
-
-// examTutor.command('ХЕР', (ctx) => {
-//   ctx.reply('типо выбери класc', null, botKeyboards.findUserClass)
-// });
-
-
 // USER SAYS => COMMANDS
 examTutor.command('ПОМОЩЬ', (ctx) => {
   ctx.reply(botPhrases.COMMANDS_LIST, null,
