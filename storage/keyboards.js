@@ -66,6 +66,16 @@ module.exports = {
     [
       Markup.button('старт', 'positive')
     ]
+  ],
+
+  doYouUnderstand: [
+    // [
+    //   Markup.button('понятно', 'positive'),
+    //   Markup.button('почему?', 'negative')
+    // ]
+    [
+      Markup.button('далее', 'positive')
+    ]
   ]
 
 }

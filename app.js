@@ -31,7 +31,7 @@ const session = new Session();
 
 // HANDLERS FOR SCENES
 
-const scene = new Scene('sceneSetupByUser',
+const scene_start = new Scene('sceneSetupByUser',
   // user class ?
   (ctx) => {
     ctx.scene.next();
@@ -66,7 +66,78 @@ const scene = new Scene('sceneSetupByUser',
   }
 );
 
-const stage = new Stage(scene);
+var taskList = [ ...helper.generateTest(source = exam, start = 1, count = 3) ];
+
+var statistics = {
+  total: 0,
+  right: 0,
+  wrong: 0
+};
+
+function* generateMiddlewares(source) {
+  for (let i = 0; i < source.length; i++) {
+    let task = source[i];
+    yield (ctx) => {
+      ctx.scene.next();
+      ctx.reply(task.textOfTask, null,
+        Markup.keyboard(botKeyboards.chooseYourAnswer).oneTime());
+    };
+    yield (ctx) => {
+      // ctx.session[`a_${i+1}`] = ctx.message.text;
+      // asnwers.push(userAnswer);
+      // console.log('answers => ', asnwers);
+
+      let userAnswer = ctx.message.text;
+      let checkResult;
+      statistics.total += 1;
+      if (+userAnswer == task.idOfCorrectAnswer) {
+        checkResult = "&#10004; Правильно";
+        statistics.right += 1;
+      } else {
+        checkResult = "&#10060; Неправильно :(";
+        statistics.wrong += 1;
+      }
+
+      let pressButton = "Чтобы продолжить, нажми кнопку 'далее'"
+
+      ctx.scene.next();
+      // ctx.reply(checkResult);
+
+      ctx.reply(`${checkResult}\n${pressButton}`, null,
+        Markup.keyboard(botKeyboards.doYouUnderstand).oneTime());
+    };
+  }
+}
+
+var objMiddlewares = [ ...generateMiddlewares(taskList) ];
+
+const scene_test = new Scene('sceneTestForUser',
+  // showing
+  ...objMiddlewares,
+
+  // checking
+  (ctx) => {
+    let percentageOfCorrect = Math.round(
+      statistics.right / statistics.total * 100
+    );
+    let message = `Вы ответили правильно на ${percentageOfCorrect}% вопросов`;
+    let rating = (percentageOfCorrect > 40)
+      ? 'Хороший результат :)'
+      : 'Как-то слабенько :('
+   
+    ctx.scene.leave();
+    ctx.reply(`${message}\n${rating}`, null,
+      Markup.keyboard(botKeyboards.showButtonHelp).oneTime());
+  }
+);
+
+//                    ###############
+
+const sceneList = [];
+sceneList.push(scene_start);
+sceneList.push(scene_test);
+
+const stage = new Stage(...sceneList);
 
 examTutor.use(session.middleware());
 examTutor.use(stage.middleware());
@@ -96,9 +167,7 @@ examTutor.command('СТАРТ', (ctx) => {
 
 // USER SAYS => START
 examTutor.command('ТЕСТ', (ctx) => {
-  const result = helper.randomQuestionsFrom(exam);
-  ctx.reply(result.textOfTask, null,
-    Markup.keyboard(botKeyboards.chooseYourAnswer).oneTime());
+  ctx.scene.enter('sceneTestForUser');
 });
 
 //                    ###############
